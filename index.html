@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rifat AI Agent</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Arial,sans-serif;background:#0b1020;color:#fff;min-height:100vh}
+    .wrap{max-width:900px;margin:auto;padding:30px 16px}
+    .hero{text-align:center;margin:20px 0 24px}
+    .hero h1{font-size:clamp(30px,6vw,54px);margin:0 0 8px}
+    .hero p{color:#aeb8d0;margin:0}
+    .chat{background:#11182b;border:1px solid #263250;border-radius:22px;overflow:hidden;box-shadow:0 20px 70px #0005}
+    #messages{height:55vh;min-height:420px;overflow:auto;padding:20px}
+    .msg{display:flex;margin:12px 0}
+    .bubble{max-width:82%;padding:13px 16px;border-radius:16px;line-height:1.55;white-space:pre-wrap}
+    .user{justify-content:flex-end}.user .bubble{background:#4f46e5}
+    .bot{justify-content:flex-start}.bot .bubble{background:#202a44}
+    .composer{display:flex;gap:10px;padding:14px;border-top:1px solid #263250}
+    textarea{flex:1;resize:none;background:#0b1020;color:#fff;border:1px solid #33405f;border-radius:14px;padding:13px;font:inherit;min-height:52px}
+    button{border:0;border-radius:14px;padding:0 20px;background:#6d5dfc;color:white;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .tips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .tip{background:#18213a;color:#cdd5ea;border:1px solid #2d3a5a;padding:8px 12px;border-radius:999px;cursor:pointer}
+    .small{text-align:center;color:#7f8ba8;font-size:12px;margin-top:12px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Rifat AI Agent</h1>
+      <p>Your AI assistant for digital marketing, tracking, websites and general questions.</p>
+    </section>
+
+    <section class="chat">
+      <div id="messages">
+        <div class="msg bot"><div class="bubble">Hi! I’m Rifat AI Agent. Ask me anything. You can write in Bangla or English.</div></div>
+      </div>
+      <div class="composer">
+        <textarea id="input" placeholder="Write your message..." rows="2"></textarea>
+        <button id="send">Send</button>
+      </div>
+    </section>
+
+    <div class="tips">
+      <button class="tip" data-text="Explain GA4 in simple Bangla">GA4</button>
+      <button class="tip" data-text="How can I get clients as a beginner freelancer?">Freelancing</button>
+      <button class="tip" data-text="Give me a simple digital marketing plan for a small business.">Marketing Plan</button>
+    </div>
+    <div class="small">API keys are kept on the server, not in this browser code.</div>
+  </main>
+
+<script>
+const messages = document.getElementById("messages");
+const input = document.getElementById("input");
+const send = document.getElementById("send");
+
+function addMessage(text, who) {
+  const row = document.createElement("div");
+  row.className = "msg " + who;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  messages.appendChild(row);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function ask() {
+  const text = input.value.trim();
+  if (!text || send.disabled) return;
+
+  addMessage(text, "user");
+  input.value = "";
+  send.disabled = true;
+  send.textContent = "Thinking...";
+
+  try {
+    const res = await fetch("/.netlify/functions/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: text})
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong.");
+    addMessage(data.reply, "bot");
+  } catch (err) {
+    addMessage("Error: " + err.message, "bot");
+  } finally {
+    send.disabled = false;
+    send.textContent = "Send";
+    input.focus();
+  }
+}
+
+send.addEventListener("click", ask);
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    ask();
+  }
+});
+document.querySelectorAll(".tip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    input.value = btn.dataset.text;
+    ask();
+  });
+});
+</script>
+</body>
+</html>
